@@ -46,5 +46,15 @@ int main()
 		printf("Get does not contain test: FAIL\n");
 	}
 
+	printf("\n+++++=REMOVE=+++++\n\n");	
+	if(ST_remove(table, "TEST KEY IS A TEST") == 1)
+	{
+		printf("REMOVE: PASS\n");
+	}
+	else
+	{
+		printf("REMOVE: FAIL\n");
+	}
+
 	return 0;
 }

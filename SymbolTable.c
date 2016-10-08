@@ -1,6 +1,8 @@
 #include "SymbolTable.h"
 #include "Utility.h"
 
+#include <unistd.h> //Double check
+
 #ifdef sys
 #include <sys/mman.h>
 #endif
@@ -186,4 +188,64 @@ void* ST_get(SymTab oSymTab, const char* key)
 	}
 
 	return (void*)rVal;
+}
+
+int ST_remove(SymTab oSymTab, const char* key)
+{
+	int hashIndex, found, count, probing, check, spot;
+
+	//Init
+	hashIndex = hash(key, oSymTab->size);
+	found = 0;
+	count = 0;
+	probing = 1;
+	check = 0;
+
+	while(found == 0 && count < oSymTab->size && probing == 1)
+	{
+		spot = ((hashIndex + count) % oSymTab->size);
+
+		//Slot is Full
+		if((*(oSymTab->slots + spot)).status == FULL)
+		{
+			//Check if key matches
+			if(stringCompare((*(oSymTab->slots + spot)).key, key))
+			{
+				found = 1;
+
+				//Free memory used to store key
+				#ifdef sys
+				munmap((*(oSymTab->slots + spot)).key, 
+				sizeof(char)*(stringLength((*(oSymTab->slots + spot)).key)));
+
+				if(check != 0)
+				{
+					//write(2, "ST_remove: munmap failed");
+				}
+				#endif
+
+				#ifdef lib
+				free((*(oSymTab->slots + spot)).key);
+				#endif
+
+				//Decrement entries counter
+				oSymTab->entries -= 1;
+
+				//Change slot status to used
+				(*(oSymTab->slots + spot)).status = USED;		
+			}
+		}
+		//Previously used, probe further
+		else if((*(oSymTab->slots + spot)).status == USED)
+		{
+
+		}
+		//Slot must be new, cannot be found
+		else
+		{
+			probing = 0;	
+		}
+	}	
+
+	return found;	
 }
