@@ -76,22 +76,18 @@ int stringCompare(const char* str1, const char* str2)
 	return equals;
 }
 
-/*Takes a string and copies it, returning the copy as a pointer*/
+//Takes a string and copies it, returning the copy as a pointer
+//Encountered an interesting bug where mmap always fails when wrapped
+//in ifdef, making it impossible to 
 char* stringCopy(const char* original)
 {
 	int c = 0;
-
 	char* target = NULL;
 
-	//#ifdef sym
-	//target = (char*)mmap(NULL, sizeof(char) * (stringLength(original)+1), MMAP_PERM, MMAP_MODE, -1, 0);
-	//#endif
-
-	target = (char*)mmap(NULL, sizeof(char) * (50), MMAP_PERM, MMAP_MODE, -1, 0);
+	target = (char*)mmap(NULL, sizeof(char) * (stringLength(original)+1), MMAP_PERM, MMAP_MODE, -1, 0);
 
 	while((*(original + c)) != '\0')
 	{
-		printf("ORIGINAL(%i): %c\n", c, (*(original + c)));
 		(*(target + c)) = (*(original + c));
 		c++;
 	}

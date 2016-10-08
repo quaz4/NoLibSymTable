@@ -56,5 +56,7 @@ int main()
 		printf("REMOVE: FAIL\n");
 	}
 
+	ST_free(table);
+
 	return 0;
 }

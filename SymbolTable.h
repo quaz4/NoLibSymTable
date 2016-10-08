@@ -31,3 +31,4 @@ void* ST_get(SymTab oSymTab, const char* key);
 int ST_remove(SymTab oSymTab, const char* key);
 SymTab ST_resize(SymTab oSymTab);
 void freeSlots(Slot* slots, int number);
+void ST_free(SymTab oSymTab);
