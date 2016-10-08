@@ -140,3 +140,50 @@ int ST_contains(SymTab oSymTab, const char* key)
 
 	return found;
 }
+
+void* ST_get(SymTab oSymTab, const char* key)
+{
+	int hashIndex, count, probing, spot;
+	const void* rVal;
+
+	//Init
+	hashIndex = hash(key, oSymTab->size);
+	count = 0;
+	probing = 1;
+
+	//While havent looked at all slots and still probing
+	while(count < oSymTab->size && probing == 1)
+	{
+		//Calculate spot in circular array
+		spot = ((hashIndex + count) % oSymTab->size);
+
+		//Index is Full, search
+		if((*(oSymTab->slots + spot)).status == FULL)
+		{
+			//Check if key matches
+			if(stringCompare((*(oSymTab->slots + spot)).key, key))
+			{
+				probing = 0;
+				rVal = (*(oSymTab->slots + spot)).data;
+			}
+			else
+			{
+				//Keep probing
+			}
+		}
+		else if((*(oSymTab->slots + spot)).status == USED)
+		{
+			//Previously used, probe further
+		}
+		else
+		{
+			//Slot must be new, cannot be found
+			probing = 0;
+			rVal = NULL;		
+		}
+
+		count++;
+	}
+
+	return (void*)rVal;
+}

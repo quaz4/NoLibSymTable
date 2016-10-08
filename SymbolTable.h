@@ -27,3 +27,4 @@ typedef symtab* SymTab;
 SymTab ST_new();
 int ST_put(SymTab oSymTab, const char* key, const void* value);
 int ST_contains(SymTab oSymTab, const char* key);
+void* ST_get(SymTab oSymTab, const char* key);

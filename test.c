@@ -4,8 +4,7 @@
 
 int main()
 {
-	printf("START TEST\n");
-	void* testData = NULL;
+	void* testData = "PASS";
 	SymTab table = NULL; 
 
 	printf("\n+++++=TABLE=+++++\n\n");
@@ -32,6 +31,19 @@ int main()
 	else
 	{
 		printf("Does not contain: PASS\n");
+	}
+
+	printf("\n+++++==GET==+++++\n\n");
+
+	printf("Get test: %s\n", (char*)ST_get(table, "TEST KEY IS A TEST"));
+
+	if(ST_get(table, "This should fail") == NULL)
+	{
+		printf("Get does not contain test: PASS\n");
+	}
+	else
+	{
+		printf("Get does not contain test: FAIL\n");
 	}
 
 	return 0;
