@@ -25,17 +25,15 @@ SymTab ST_new()
 	#ifdef sys 
 	slots = (Slot*)mmap(NULL, sizeof(Slot)*769, MMAP_PERM, MMAP_MODE, -1, 0);
 	table = (SymTab)mmap(NULL, sizeof(symtab), MMAP_PERM, MMAP_MODE, -1, 0);
-	/*slots = (Slot*)mmap(NULL, sizeof(Slot)*769, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	table = (SymTab)mmap(NULL, sizeof(symtab), PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0); */
 	#endif
 
 	//Init status to NEW
 	for(int i = 0; i < 769; i++)
 	{
 		(*(slots + i)).status = NEW;
-		//printf("STATUS(%i): %i\n", i, (*(slots + i)).status);
 	}
 
+	//Init table
 	table->slots = slots;
 	table->size = 769;
 	table->entries = 0;
@@ -45,16 +43,13 @@ SymTab ST_new()
 
 int ST_put(SymTab oSymTab, const char* key, const void* value)
 {
-	int hashIndex;
-	int notFound;
-	int count;
-	int result;
-	int spot;
+	int hashIndex, notFound, count, result, spot;
 
 	hashIndex = hash(key, oSymTab-> size);
 
 	printf("HASHED: %i\n", hashIndex);
 
+	//Init
 	count = 0;
 	notFound = 1;
 
@@ -65,8 +60,10 @@ int ST_put(SymTab oSymTab, const char* key, const void* value)
 	}
 	else
 	{
+		//While free slot not found and has room
 		while(notFound == 1 && count < oSymTab->size)
 		{
+			//Calculate spot in circular array
 			spot = ((hashIndex + count) % oSymTab->size);
 
 			if((*(oSymTab->slots + spot)).status == NEW)
@@ -86,12 +83,15 @@ int ST_put(SymTab oSymTab, const char* key, const void* value)
 			}
 		}
 
+		//Update slot values
 		(*(oSymTab->slots + spot)).data = value;
 		(*(oSymTab->slots + spot)).status = FULL;
 		oSymTab->entries += 1;
 
+		//Copy key to slot
 		(*(oSymTab->slots + spot)).key = stringCopy(key);
 
+		//Save string length to slot
 		(*(oSymTab->slots + spot)).keyLength = stringLength((*(oSymTab->slots + spot)).key);
 
 		printf("KEY SAVED AS: %s\n", (*(oSymTab->slots + spot)).key);
@@ -104,5 +104,39 @@ int ST_put(SymTab oSymTab, const char* key, const void* value)
 
 int ST_contains(SymTab oSymTab, const char* key)
 {
-	return 0;
+	int hashIndex, found, count, probing, spot;
+
+	hashIndex = hash(key, oSymTab->size);
+
+	//Init
+	found = 0;
+	count = 0;
+	probing = 1;
+
+	//While not found, haven't looked at all slots and still probing
+	while(found == 0 && count < oSymTab->size && probing == 1)
+	{
+		//Calculate spot in circular array
+		spot = ((hashIndex + count) % oSymTab->size);
+
+		//Index is empty, stop searching
+		if((*(oSymTab->slots + spot)).status == FULL && stringCompare(
+			(*(oSymTab->slots + spot)).key, key))
+		{
+			found = 1;
+		}
+		else if((*(oSymTab->slots + spot)).status == USED)
+		{
+			//Keep probing
+		}
+		else
+		{
+			//Not found
+			probing = 0;		
+		}
+
+		count++;		
+	}
+
+	return found;
 }
