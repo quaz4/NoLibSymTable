@@ -1,17 +1,14 @@
 #include "SymbolTable.h"
 #include "Utility.h"
 
-#include <unistd.h> //Double check
-
 #ifdef sys
 #include <sys/mman.h>
+#include <unistd.h> //Double check
 #endif
 
 #ifdef lib
 #include <stdlib.h>
 #endif
-
-#include <stdio.h> //DELETE ME
 
 #define MMAP_PERM PROT_READ|PROT_WRITE
 #define MMAP_MODE MAP_PRIVATE|MAP_ANONYMOUS
@@ -49,7 +46,8 @@ int ST_put(SymTab oSymTab, const char* key, const void* value)
 
 	hashIndex = hash(key, oSymTab-> size);
 
-	printf("HASHED: %i\n", hashIndex);
+	//Check if table should be resized
+	ST_resize(oSymTab);
 
 	//Init
 	count = 0;
@@ -95,8 +93,6 @@ int ST_put(SymTab oSymTab, const char* key, const void* value)
 
 		//Save string length to slot
 		(*(oSymTab->slots + spot)).keyLength = stringLength((*(oSymTab->slots + spot)).key);
-
-		printf("KEY SAVED AS: %s\n", (*(oSymTab->slots + spot)).key);
 
 		result = 0;
 	}
@@ -248,4 +244,101 @@ int ST_remove(SymTab oSymTab, const char* key)
 	}	
 
 	return found;	
+}
+
+//Grow or shrink the hash table, rebuilding it every time the size changes
+//Rebuilding is expensive
+SymTab ST_resize(SymTab oSymTab)
+{
+	int count, i;
+	Slot* temp, *new;
+
+	//Init
+	count = 0;
+
+	//If load factor greater than 0.5 grow
+	if((oSymTab->entries / oSymTab->size) > 0.5 && oSymTab->size != *(sizes + 7))
+	{
+		//Work out what size to grow to
+		while(oSymTab->size != *(sizes + count))
+		{
+			count++;
+		}
+
+		//Allocate larger array
+		#ifdef sys
+		new = (Slot*)mmap(NULL, sizeof(Slot) * (*(sizes + count + 1)), MMAP_PERM, MMAP_MODE, -1, 0);
+		#endif
+
+		#ifdef lib
+		new = (Slot*)malloc(sizeof(Slot) * (*(sizes + count + 1)));
+		#endif
+
+		//Make new table
+		temp = oSymTab->slots;
+
+		//Assign new slots to table
+		oSymTab->slots = new;
+
+		//Update table data
+		oSymTab->size = (*(sizes + count + 1));
+		oSymTab->entries = 0;
+
+		//Init slots as NEW
+		for(i = 0; i < (*(sizes + count + 1)); i++)
+		{
+			(*(oSymTab->slots + i)).status = NEW;
+		}
+
+		//Move entries from old to new table
+		for(i = 0; i < (*(sizes + count)); i++)
+		{
+			if((*(oSymTab->slots + i)).status == FULL)
+			{
+				ST_put(oSymTab, (*(temp + i)).key, (*(temp + i)).data);
+			}
+		}
+
+		//Free slots from old table
+		freeSlots(temp, oSymTab->size);
+	}
+
+	return oSymTab;
+}
+
+//Free values stored in slots and the slots
+void freeSlots(Slot* slots, int number)
+{
+	int i, check;
+
+	check = 0;
+
+	for(i = 0; i < number; i++)
+	{
+		//If full, free key
+		if((*(slots + i)).status == FULL)
+		{
+			#ifdef sys
+			munmap((*(slots + i)).key, sizeof(char) * ((*(slots + i)).keyLength));
+			munmap(slots, sizeof(Slot) * number);
+
+			//Error checking
+			if(check != 0)
+			{
+				write(2, "freeSlots: munmap failed", 25);
+			}
+			#endif
+
+			#ifdef lib
+			free((*(slots + i)).key);
+			free(slots);
+			#endif
+		}		
+	}
+}
+
+//Wrapper for freeSlots so you can pass a SymTab struct instead
+void ST_free(SymTab oSymTab)
+{
+	freeSlots(temp, oSymTab->size);
 }
