@@ -1,8 +1,4 @@
 #include "Utility.h"
-#include <stdio.h> //DELETE ME
-
-#define MMAP_PERM PROT_READ|PROT_WRITE
-#define MMAP_MODE MAP_PRIVATE|MAP_ANONYMOUS
 #include <sys/mman.h>
 
 //Hashes a string, returning a number
@@ -78,10 +74,11 @@ int stringCompare(const char* str1, const char* str2)
 
 //Takes a string and copies it, returning the copy as a pointer
 //Encountered an interesting bug where mmap always fails when wrapped
-//in ifdef, making it impossible to 
+//in ifdef, making it impossible to use malloc in the lib version
 char* stringCopy(const char* original)
 {
 	int c = 0;
+
 	char* target = NULL;
 
 	target = (char*)mmap(NULL, sizeof(char) * (stringLength(original)+1), MMAP_PERM, MMAP_MODE, -1, 0);

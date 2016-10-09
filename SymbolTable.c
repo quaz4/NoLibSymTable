@@ -1,10 +1,9 @@
 #include "SymbolTable.h"
 #include "Utility.h"
 
-#include <sys/mman.h>
-#include <stdlib.h>
-#include <unistd.h> //Double check
-
+#include <sys/mman.h> //Mmap / munmap
+#include <stdlib.h> //Malloc / Free
+#include <unistd.h> //Write
 
 #define MMAP_PERM PROT_READ|PROT_WRITE
 #define MMAP_MODE MAP_PRIVATE|MAP_ANONYMOUS
@@ -66,7 +65,7 @@ int ST_put(SymTab oSymTab, const char* key, const void* value)
 	if(key != NULL && oSymTab != NULL)
 	{
 		//Check if table should be resized
-		ST_resize(oSymTab);
+		oSymTab = ST_resize(oSymTab);
 
 		hashIndex = hash(key, oSymTab-> size);
 
@@ -122,6 +121,7 @@ int ST_put(SymTab oSymTab, const char* key, const void* value)
 	return result;
 }
 
+//Returns true if key is mapped in table
 int ST_contains(SymTab oSymTab, const char* key)
 {
 	int hashIndex, found, count, probing, spot;
@@ -148,10 +148,6 @@ int ST_contains(SymTab oSymTab, const char* key)
 			{
 				found = 1;
 			}
-			else if((*(oSymTab->slots + spot)).status == USED)
-			{
-				//Keep probing
-			}
 			else
 			{
 				//Not found
@@ -169,6 +165,7 @@ int ST_contains(SymTab oSymTab, const char* key)
 	return found;
 }
 
+//Returns the data mapped to a key
 void* ST_get(SymTab oSymTab, const char* key)
 {
 	int hashIndex, count, probing, spot;
@@ -216,6 +213,7 @@ void* ST_get(SymTab oSymTab, const char* key)
 	return (void*)rVal;
 }
 
+//Removes the key<->data mapping
 int ST_remove(SymTab oSymTab, const char* key)
 {
 	int hashIndex, found, count, probing, check, spot;
@@ -335,17 +333,21 @@ SymTab ST_resize(SymTab oSymTab)
 			(*(oSymTab->slots + i)).status = NEW;
 		}
 
+		int moved = 0;
 		//Move entries from old to new table
 		for(i = 0; i < (*(sizes + count)); i++)
 		{
-			if((*(oSymTab->slots + i)).status == FULL)
+			if((*(temp + i)).status == FULL)
 			{
 				ST_put(oSymTab, (*(temp + i)).key, (*(temp + i)).data);
+				moved++;
 			}
 		}
 
+		oSymTab->entries = moved;
+
 		//Free slots from old table
-		freeSlots(temp, oSymTab->size);
+		freeSlots(temp, (*(sizes + count)));
 	}
 
 	return oSymTab;
@@ -382,8 +384,6 @@ void freeSlots(Slot* slots, int number)
 	{
 		write(2, "freeSlots: munmap failed\n", 26);
 	}
-
-
 }
 
 //Wrapper for freeSlots so you can pass a SymTab struct instead

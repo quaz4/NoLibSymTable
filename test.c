@@ -1,63 +1,115 @@
 #include "SymbolTable.h"
 #include "Utility.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 int main()
 {
-	void* testData = "PASS";
-	SymTab table = NULL; 
+	int exit = 0;
+	int option = 0;
+	char name[20];
+	int* data;
+	int count = 0;
+	int i = 0;
 
-	printf("\n+++++=TABLE=+++++\n\n");
-	table = ST_new();
+	SymTab book = ST_new();
 
-	printf("\n+++++==PUT==+++++\n\n");
-	ST_put(table, "TEST KEY IS A TEST", testData);
-
-	printf("\n+++++=CONTAINS=+++++\n\n");
+	while(exit == 0)
+	{
+		printf("#####ENTER OPTION#####\n");
+		printf("1) Add Entry\n");
+		printf("2) Find Entry\n");
+		printf("3) Remove Entry\n");
+		printf("4) Fill to capacity\n");
+		printf("5) Exit\n\n");
 	
-	if(ST_contains(table, "TEST KEY IS A TEST") == 1)
-	{
-		printf("Contains: PASS\n");
-	}
-	else
-	{
-		printf("Contains: FAIL\n");
+		printf("Option: ");
+
+		scanf("%d", &option);
+
+		if(option == 1)
+		{
+			//Add
+			//Name is used as the key
+			if(count < 98317)
+			{
+				printf("\nEnter Name: ");
+				scanf("%s", name);
+
+				data = (int*)malloc(sizeof(int));
+				printf("Enter phone number: ");
+				scanf("%d", data);
+
+				printf("\n");
+
+				ST_put(book, name, (void*)data);
+
+				count++;
+			}
+			else
+			{
+				printf("Can't add\n");
+			}
+		}
+		else if(option == 2)
+		{
+			//Get
+			//Name is used as the key
+			printf("\nEnter Name: ");
+			scanf("%s", name);
+			printf("\n");
+
+			if(ST_contains(book, name) == 1)
+			{
+				printf("Name: %s\n", name);
+				printf("Ph: %i\n\n", (*(int*)ST_get(book, name)));
+			}
+			else
+			{
+				printf("Person not found\n\n");
+			}
+		}
+		else if(option == 3)
+		{
+			//Name is used as the key
+			printf("\nEnter Name: ");
+			scanf("%s", name);
+			printf("\n");
+
+			//Remove
+			if(ST_contains(book, name) == 1)
+			{	
+				free(ST_get(book, name));
+				ST_remove(book, name);
+				count--;
+			}
+			else
+			{
+				printf("Person not found");
+			}
+		}
+		else if(option == 4)
+		{
+			for(i = count; i < 98317; i++)
+			{
+				sprintf(name, "%d", i);
+				data = (int*)malloc(sizeof(int));
+				*data = i;
+				ST_put(book, name, data);
+				count++;
+			}
+		}
+		else if(option == 5)
+		{
+			exit = 1;
+		}
+		else
+		{
+			printf("\nInvalid option\n\n");
+		}
 	}
 
-	if(ST_contains(table, "This should fail") == 1)
-	{
-		printf("Does not contain: FAIL\n");
-	}
-	else
-	{
-		printf("Does not contain: PASS\n");
-	}
-
-	printf("\n+++++==GET==+++++\n\n");
-
-	printf("Get test: %s\n", (char*)ST_get(table, "TEST KEY IS A TEST"));
-
-	if(ST_get(table, "This should fail") == NULL)
-	{
-		printf("Get does not contain test: PASS\n");
-	}
-	else
-	{
-		printf("Get does not contain test: FAIL\n");
-	}
-
-	
-	printf("\n+++++=REMOVE=+++++\n\n");	
-	if(ST_remove(table, "TEST KEY IS A TEST") == 1)
-	{
-		printf("REMOVE: PASS\n");
-	}
-	else
-	{
-		printf("REMOVE: FAIL\n");
-	}
-	
-	ST_free(table);
+	ST_free(book);
 
 	return 0;
 }
