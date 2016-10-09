@@ -1,15 +1,10 @@
 #include "SymbolTable.h"
 #include "Utility.h"
 
-//#ifdef sys
 #include <sys/mman.h>
-//#else
 #include <stdlib.h>
-//#endif
-
 #include <unistd.h> //Double check
 
-#include <stdio.h>
 
 #define MMAP_PERM PROT_READ|PROT_WRITE
 #define MMAP_MODE MAP_PRIVATE|MAP_ANONYMOUS
@@ -67,11 +62,11 @@ int ST_put(SymTab oSymTab, const char* key, const void* value)
 	notFound = 1;
 	result = 0;
 
-	//Runtime error checking
+	//Error checking
 	if(key != NULL && oSymTab != NULL)
 	{
 		//Check if table should be resized
-		//ST_resize(oSymTab);
+		ST_resize(oSymTab);
 
 		hashIndex = hash(key, oSymTab-> size);
 
@@ -138,6 +133,7 @@ int ST_contains(SymTab oSymTab, const char* key)
 	count = 0;
 	probing = 1;
 
+	//Error checking
 	if(key != NULL && oSymTab != NULL)
 	{
 		//While not found, haven't looked at all slots and still probing
@@ -146,7 +142,7 @@ int ST_contains(SymTab oSymTab, const char* key)
 			//Calculate spot in circular array
 			spot = ((hashIndex + count) % oSymTab->size);
 
-			//Index is empty, stop searching
+			//Index is full and key matches
 			if((*(oSymTab->slots + spot)).status == FULL && 
 				stringCompare((*(oSymTab->slots + spot)).key, key))
 			{
@@ -184,6 +180,7 @@ void* ST_get(SymTab oSymTab, const char* key)
 	probing = 1;
 	rVal = NULL;
 
+	//Error checking
 	if(key != NULL && oSymTab != NULL)
 	{
 		//While havent looked at all slots and still probing
@@ -230,6 +227,7 @@ int ST_remove(SymTab oSymTab, const char* key)
 	probing = 1;
 	check = 0;
 
+	//Error checking
 	if(key != NULL && oSymTab != NULL)
 	{
 		while(found == 0 && count < oSymTab->size && probing == 1)
@@ -245,7 +243,6 @@ int ST_remove(SymTab oSymTab, const char* key)
 					found = 1;
 
 					//Free memory used to store key
-					#ifdef sys
 					check = munmap((*(oSymTab->slots + spot)).key, 
 					sizeof(char)*(stringLength((*(oSymTab->slots + spot)).key)));
 
@@ -253,10 +250,6 @@ int ST_remove(SymTab oSymTab, const char* key)
 					{
 						write(2, "ST_remove: munmap failed", 24);
 					}
-
-					#else
-					free((*(oSymTab->slots + spot)).key);
-					#endif
 
 					//Decrement entries counter
 					oSymTab->entries -= 1;
@@ -268,7 +261,7 @@ int ST_remove(SymTab oSymTab, const char* key)
 			//Previously used, probe further
 			else if((*(oSymTab->slots + spot)).status == USED)
 			{
-
+				count++;
 			}
 			//Slot must be new, cannot be found
 			else
@@ -371,26 +364,36 @@ void freeSlots(Slot* slots, int number)
 		if((*(slots + i)).status == FULL)
 		{
 			#ifdef sys
-			munmap((*(slots + i)).key, sizeof(char) * ((*(slots + i)).keyLength));
-			munmap(slots, sizeof(Slot) * number);
-
-			//Error checking
-			if(check != 0)
-			{
-				write(2, "freeSlots: munmap failed", 25);
-			}
-
+			check = munmap((*(slots + i)).key, sizeof(char) * ((*(slots + i)).keyLength+1));
 			#else
-			munmap((*(slots + i)).key, sizeof(char) * ((*(slots + i)).keyLength));
-			free(slots);
+			check = munmap((*(slots + i)).key, sizeof(char) * ((*(slots + i)).keyLength+1));
 			#endif
 		}		
 	}
+
+	#ifdef sys
+	check = munmap(slots, sizeof(Slot) * number);
+	#else
+	free(slots);
+	#endif
+
+	//Error checking
+	if(check != 0)
+	{
+		write(2, "freeSlots: munmap failed\n", 26);
+	}
+
+
 }
 
 //Wrapper for freeSlots so you can pass a SymTab struct instead
 void ST_free(SymTab oSymTab)
 {
 	freeSlots(oSymTab->slots, oSymTab->size);
+
+	#ifdef sys
 	munmap(oSymTab, sizeof(SymTab));
+	#else
+	free(oSymTab);
+	#endif
 }
