@@ -22,7 +22,8 @@ int main()
 		printf("2) Find Entry\n");
 		printf("3) Remove Entry\n");
 		printf("4) Fill to capacity\n");
-		printf("5) Exit\n\n");
+		printf("5) Free fill to capacity\n");
+		printf("6) Exit\n\n");
 	
 		printf("Option: ");
 
@@ -104,6 +105,16 @@ int main()
 			filledToCap = 1;
 		}
 		else if(option == 5)
+		{
+			for(i = 0; i < 98317; i++)
+			{
+				sprintf(name, "%d", i);
+				*data = i;
+				free(ST_get(book, name));
+				count++;
+			}
+		}
+		else if(option == 6)
 		{
 			exit = 1;
 		}
