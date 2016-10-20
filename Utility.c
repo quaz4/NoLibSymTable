@@ -1,5 +1,6 @@
 #include "Utility.h"
 #include <sys/mman.h>
+#include <stdlib.h> //Malloc / Free
 
 //Hashes a string, returning a number
 int hash(const char* inKey, int tableSize)
@@ -81,7 +82,11 @@ char* stringCopy(const char* original)
 
 	char* target = NULL;
 
+	#ifdef sys
 	target = (char*)mmap(NULL, sizeof(char) * (stringLength(original)+1), MMAP_PERM, MMAP_MODE, -1, 0);
+	#else
+	target = (char*)malloc(sizeof(char) * (stringLength(original)+1));
+	#endif
 
 	while((*(original + c)) != '\0')
 	{
