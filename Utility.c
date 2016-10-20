@@ -74,8 +74,6 @@ int stringCompare(const char* str1, const char* str2)
 }
 
 //Takes a string and copies it, returning the copy as a pointer
-//Encountered an interesting bug where mmap always fails when wrapped
-//in ifdef, making it impossible to use malloc in the lib version
 char* stringCopy(const char* original)
 {
 	int c = 0;
