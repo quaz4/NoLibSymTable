@@ -216,14 +216,18 @@ void* ST_get(SymTab oSymTab, const char* key)
 //Removes the key<->data mapping
 int ST_remove(SymTab oSymTab, const char* key)
 {
-	int hashIndex, found, count, probing, check, spot;
+	int hashIndex, found, count, probing, spot;
 
 	//Init
 	hashIndex = hash(key, oSymTab->size);
 	found = 0;
-	count = 0;
 	probing = 1;
+	count = 0;
+
+	#ifdef sys
+	int check;
 	check = 0;
+	#endif
 
 	//Error checking
 	if(key != NULL && oSymTab != NULL)
@@ -240,14 +244,19 @@ int ST_remove(SymTab oSymTab, const char* key)
 				{
 					found = 1;
 
+					#ifdef sys
 					//Free memory used to store key
 					check = munmap((*(oSymTab->slots + spot)).key, 
 					sizeof(char)*(stringLength((*(oSymTab->slots + spot)).key)));
-
+					
 					if(check != 0)
 					{
 						write(2, "ST_remove: munmap failed", 24);
 					}
+
+					#else
+					free((*(oSymTab->slots + spot)).key);
+					#endif
 
 					//Decrement entries counter
 					oSymTab->entries -= 1;
@@ -356,9 +365,12 @@ SymTab ST_resize(SymTab oSymTab)
 //Free values stored in slots and the slots
 void freeSlots(Slot* slots, int number)
 {
-	int i, check;
+	int i;
 
+	#ifdef sys
+	int check;
 	check = 0;
+	#endif
 
 	for(i = 0; i < number; i++)
 	{
@@ -368,7 +380,7 @@ void freeSlots(Slot* slots, int number)
 			#ifdef sys
 			check = munmap((*(slots + i)).key, sizeof(char) * ((*(slots + i)).keyLength+1));
 			#else
-			check = munmap((*(slots + i)).key, sizeof(char) * ((*(slots + i)).keyLength+1));
+			free((*(slots + i)).key);
 			#endif
 		}		
 	}
@@ -379,11 +391,13 @@ void freeSlots(Slot* slots, int number)
 	free(slots);
 	#endif
 
+	#ifdef sys
 	//Error checking
 	if(check != 0)
 	{
 		write(2, "freeSlots: munmap failed\n", 26);
 	}
+	#endif
 }
 
 //Wrapper for freeSlots so you can pass a SymTab struct instead
